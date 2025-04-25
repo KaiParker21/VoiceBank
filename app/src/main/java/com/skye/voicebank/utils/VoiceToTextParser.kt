@@ -66,6 +66,42 @@ class VoiceToTextParser(
         listeningJob?.cancel()
     }
 
+    fun startContinuousListening(languageCode: String) {
+        Log.d(TAG, "Starting continuous listening...")
+
+        _state.update { VoiceToTextParserState() }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(app)) {
+            Log.e(TAG, "Speech recognition is not available.")
+            _state.update {
+                it.copy(
+                    error = "Recognition is not available."
+                )
+            }
+            return
+        }
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageCode)
+        }
+
+        recognizer.setRecognitionListener(this)
+        recognizer.startListening(intent)
+
+        _state.update {
+            it.copy(
+                isSpeaking = true
+            )
+        }
+
+        Log.d(TAG, "Continuous listening started, waiting for speech input...")
+    }
+
+
     fun stopListening() {
         Log.d(TAG, "Stopping listening...")
         listeningJob?.cancel()

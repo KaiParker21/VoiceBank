@@ -19,7 +19,7 @@ fun NavigationGraph(
 ) {
     NavHost(
         navController = navcontroller,
-        startDestination = Screens.SplashScreen.route
+        startDestination = Screens.BankingCommandsScreen.route
     ) {
         composable (Screens.SignupOrLoginScreen.route) {
             SignUpOrLoginScreen(
@@ -66,13 +66,20 @@ fun NavigationGraph(
             )
         }
 
-        composable(Screens.CommandsScreen.route) {
+//        composable(Screens.CommandsScreen.route) {
+//            BankingCommandsScreen(
+//                navController = navcontroller,
+//                authViewModel = authViewModel,
+//                voiceToTextParser = voiceToTextParser,
+//                frillModel = frillModel,
+//                ttsHelper = ttsHelper
+//            )
+//        }
+
+        composable(Screens.BankingCommandsScreen.route) {
             BankingCommandsScreen(
-                navController = navcontroller,
                 authViewModel = authViewModel,
                 voiceToTextParser = voiceToTextParser,
-                frillModel = frillModel,
-                ttsHelper = ttsHelper
             )
         }
     }
