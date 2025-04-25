@@ -11,6 +11,7 @@ import java.util.*
 class TextToSpeechHelper(context: Context) {
 
     private var tts: TextToSpeech? = null
+    private val utteranceCallbacks = mutableMapOf<String, () -> Unit>()
 
     init {
         tts = TextToSpeech(context) { status ->
@@ -23,28 +24,32 @@ class TextToSpeechHelper(context: Context) {
                 Log.e("TTS", "Initialization failed")
             }
         }
-    }
-
-    fun speak(text: String, onDone: (() -> Unit)? = null) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TTS_ID")
-
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {
-
-            }
+            override fun onStart(utteranceId: String?) {}
 
             override fun onDone(utteranceId: String?) {
-                Handler(Looper.getMainLooper()).post {
-                    onDone?.invoke()
+                utteranceId?.let {
+                    Handler(Looper.getMainLooper()).post {
+                        utteranceCallbacks.remove(it)?.invoke()
+                    }
                 }
             }
 
             override fun onError(utteranceId: String?) {
-                Handler(Looper.getMainLooper()).post {
-                    onDone?.invoke()
+                utteranceId?.let {
+                    Handler(Looper.getMainLooper()).post {
+                        utteranceCallbacks.remove(it)?.invoke()
+                    }
                 }
             }
         })
+    }
+
+    fun speak(text: String, onDone: (() -> Unit)? = null) {
+        val utteranceId = UUID.randomUUID().toString()
+        onDone?.let { utteranceCallbacks[utteranceId] = it }
+
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
 

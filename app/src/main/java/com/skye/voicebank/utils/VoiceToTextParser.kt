@@ -30,6 +30,12 @@ class VoiceToTextParser(
     private val TAG = "VoiceToTextParser"
 
     fun startListening(languageCode: String) {
+
+        if(state.value.isSpeaking) {
+            Log.d("VoiceToText", "Already listening, debouncing")
+            return
+        }
+
         Log.d(TAG, "Starting to listen for speech...")
 
         _state.update { VoiceToTextParserState() }
@@ -67,6 +73,12 @@ class VoiceToTextParser(
     }
 
     fun startContinuousListening(languageCode: String) {
+
+        if(state.value.isSpeaking) {
+            Log.d("VoiceToText", "Already listening, debouncing")
+            return
+        }
+
         Log.d(TAG, "Starting continuous listening...")
 
         _state.update { VoiceToTextParserState() }
@@ -107,7 +119,7 @@ class VoiceToTextParser(
         listeningJob?.cancel()
         recognizer.stopListening()
         _state.update {
-            it.copy(isSpeaking = false)
+            it.copy(isSpeaking = false, spokenText = "")
         }
     }
 
@@ -168,6 +180,7 @@ class VoiceToTextParser(
             )
         }
     }
+
 
     override fun onPartialResults(p0: Bundle?) {
         Log.d(TAG, "Partial results received.")
