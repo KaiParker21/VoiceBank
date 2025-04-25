@@ -36,6 +36,7 @@ fun SplashScreen(
         tts = TextToSpeech(context) {
             if (it == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.US
+                tts?.setSpeechRate(1.0f)
                 tts?.speak("Welcome to Voice Bank", TextToSpeech.QUEUE_FLUSH, null, null)
 
             }

@@ -81,6 +81,7 @@ fun SignUpScreen(
         textToSpeech = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech?.language = Locale.US
+                textToSpeech?.setSpeechRate(1.0f)
                 textToSpeech?.speak("Please speak your name", TextToSpeech.QUEUE_FLUSH, null, null)
             } else {
                 Toast.makeText(context, "Text to Speech not supported", Toast.LENGTH_SHORT).show()

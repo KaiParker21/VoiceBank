@@ -19,7 +19,7 @@ fun NavigationGraph(
 ) {
     NavHost(
         navController = navcontroller,
-        startDestination = Screens.CommandsScreen.route
+        startDestination = Screens.SplashScreen.route
     ) {
         composable (Screens.SignupOrLoginScreen.route) {
             SignUpOrLoginScreen(
