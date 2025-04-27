@@ -223,7 +223,7 @@ fun LoginScreen(
                                     testEmbedding
                                 )
                                 Log.d("FRILL", "Similarity Score: $similarity")
-                                if (similarity > 0.6) {
+                                if (similarity > 0.3) {
                                     isVoiceAuthenticated = true
                                     textToSpeech?.speak(
                                         "Voice authentication successful, logging in", TextToSpeech.QUEUE_FLUSH, null, null
