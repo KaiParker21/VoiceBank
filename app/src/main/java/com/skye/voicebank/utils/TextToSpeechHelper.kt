@@ -19,6 +19,8 @@ class TextToSpeechHelper(context: Context) {
                 val result = tts?.setLanguage(Locale("en", "US"))
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     Log.e("TTS", "Language not supported")
+                } else {
+                    tts?.setSpeechRate(1.0f)
                 }
             } else {
                 Log.e("TTS", "Initialization failed")
