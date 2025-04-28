@@ -2,12 +2,13 @@ package com.skye.voicebank
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
@@ -20,9 +21,15 @@ import com.skye.voicebank.viewmodels.AuthRepository
 import com.skye.voicebank.viewmodels.AuthViewModel
 import com.skye.voicebank.viewmodels.AuthViewModelFactory
 import com.skye.voicebank.viewmodels.FirebaseAuthRepository
+import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity :
-    ComponentActivity() {
+    AppCompatActivity() {
+
+    private val promptManager by lazy {
+        BiometricPromptManager(this)
+    }
+
 
     val voiceToTextParser by lazy {
         VoiceToTextParser(application)
@@ -34,6 +41,9 @@ class MainActivity :
 
     private lateinit var frillModel: FRILLModel
 
+    @RequiresApi(
+        Build.VERSION_CODES.R
+    )
     override fun onCreate(
         savedInstanceState: Bundle?
     ) {
@@ -75,7 +85,8 @@ class MainActivity :
                     authViewModel = authViewModel,
                     frillModel = frillModel,
                     voiceToTextParser = voiceToTextParser,
-                    ttsHelper = ttsHelper
+                    ttsHelper = ttsHelper,
+                    promptManager = promptManager
                 )
             }
         }

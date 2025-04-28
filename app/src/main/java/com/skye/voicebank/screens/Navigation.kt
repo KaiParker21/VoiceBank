@@ -1,21 +1,28 @@
 package com.skye.voicebank.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.skye.voicebank.BiometricPromptManager
 import com.skye.voicebank.utils.FRILLModel
 import com.skye.voicebank.utils.TextToSpeechHelper
 import com.skye.voicebank.utils.VoiceToTextParser
 import com.skye.voicebank.viewmodels.AuthViewModel
 
+@RequiresApi(
+    Build.VERSION_CODES.R
+)
 @Composable
 fun NavigationGraph(
     navcontroller: NavHostController,
     authViewModel: AuthViewModel,
     frillModel: FRILLModel,
     voiceToTextParser: VoiceToTextParser,
-    ttsHelper: TextToSpeechHelper
+    ttsHelper: TextToSpeechHelper,
+    promptManager: BiometricPromptManager
 ) {
     NavHost(
         navController = navcontroller,
@@ -80,7 +87,9 @@ fun NavigationGraph(
             BankingCommandsScreen(
                 authViewModel = authViewModel,
                 voiceToTextParser = voiceToTextParser,
-                ttsHelper = ttsHelper
+                ttsHelper = ttsHelper,
+                frillModel = frillModel,
+                promptManager = promptManager
             )
         }
     }

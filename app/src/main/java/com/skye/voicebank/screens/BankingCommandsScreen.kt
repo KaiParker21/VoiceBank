@@ -1,8 +1,14 @@
 package com.skye.voicebank.screens
 
 import android.annotation.SuppressLint
-import android.speech.tts.TextToSpeech
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.RepeatMode
@@ -14,7 +20,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +34,7 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,35 +48,69 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.skye.voicebank.utils.AudioProcessor
+import com.skye.voicebank.BiometricPromptManager
+import com.skye.voicebank.BiometricPromptManager.BiometricResult
+import com.skye.voicebank.utils.FRILLModel
 import com.skye.voicebank.utils.TextToSpeechHelper
 import com.skye.voicebank.utils.VoiceToTextParser
 import com.skye.voicebank.viewmodels.AuthViewModel
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
+@RequiresApi(
+    Build.VERSION_CODES.R
+)
+@SuppressLint(
+    "MissingPermission"
+)
 @Composable
 fun BankingCommandsScreen(
     voiceToTextParser: VoiceToTextParser,
     authViewModel: AuthViewModel,
-    ttsHelper: TextToSpeechHelper
+    ttsHelper: TextToSpeechHelper,
+    frillModel: FRILLModel,
+    promptManager: BiometricPromptManager
 ) {
+
+    val biometricResult by promptManager.promptResults.collectAsState(initial = null)
+
+    val enrollLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+        onResult = {
+            println("Result: $it")
+        }
+    )
+
+    LaunchedEffect(biometricResult) {
+        if (biometricResult is BiometricResult.AuthenticationNotSet) {
+            val enrollIntent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, BIOMETRIC_STRONG)
+            }
+            enrollLauncher.launch(enrollIntent)
+        }
+    }
+
+    var uiMessage by remember { mutableStateOf("Waiting for command...") }
+    var uiSubMessage by remember { mutableStateOf("") }
+
 
     val userId = authViewModel.getCurrentUserId()
     var command by remember { mutableStateOf("") }
-
     var registeredEmbeddings by remember { mutableStateOf<List<Float>?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
+    var otpValidationInProgress by remember { mutableStateOf(false) }
+    var voiceAuthInProgress by remember { mutableStateOf(false) }
+    var faceAuthInProgress by remember { mutableStateOf(false) }
 
     var currentOTP by remember { mutableStateOf<String?>(null) }
-    var otpValidationInProgress by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val state by voiceToTextParser.state.collectAsState()
@@ -88,6 +131,54 @@ fun BankingCommandsScreen(
         voiceToTextParser.startContinuousListening("en-IN")
     }
 
+//    LaunchedEffect(state.spokenText) {
+//        if(!state.isSpeaking && !isProcessing) {
+//            voiceToTextParser.startContinuousListening("en-IN")
+//        } else if (isValidCommand(state.spokenText) && !otpValidationInProgress) {
+//            Log.d("VoiceToText", "Valid command: ${state.spokenText}")
+//            command = state.spokenText
+//            otpValidationInProgress = true
+//            currentOTP = generateOTP()
+//            ttsHelper.speak("Your OTP is: $currentOTP. Please say the OTP to confirm.")
+//            delay(7000)
+//            voiceToTextParser.startContinuousListening("en-IN")
+//        } else if (otpValidationInProgress && state.spokenText.isNotEmpty() && !voiceAuthInProgress) {
+//            if(state.spokenText == currentOTP) {
+//                otpValidationInProgress = false
+//                voiceAuthInProgress = true
+//            } else {
+//                val msg = "The OTP is $currentOTP. Please try again."
+//                ttsHelper.speak(msg)
+//                Log.w("OTP", "Incorrect OTP: ${state.spokenText}")
+//                delay(5000)
+//            }
+//        }
+//    }
+//
+//    LaunchedEffect(voiceAuthInProgress) {
+//        if(voiceAuthInProgress) {
+//            ttsHelper.speak("Please speak now to verify your voice")
+//            delay(6000)
+//            var currentEmbeddings = audioProcessor.recordAndProcessAudio(frillModel)?.toList()
+//            if (currentEmbeddings != null) {
+//                val similarity = audioProcessor.cosineSimilarity(registeredEmbeddings!!, currentEmbeddings)
+//                if (similarity > 0.3) {
+//                    faceAuthInProgress = true
+//                    voiceAuthInProgress = false
+//                    ttsHelper.speak("Voice Authentication Successful")
+//                    delay(3000)
+//                    voiceToTextParser.startContinuousListening("en-IN")
+//                } else {
+//                    delay(1000)
+//                    ttsHelper.speak("Voice not recognized. Please try again.")
+//                    delay(3000)
+//                    voiceAuthInProgress = true
+//                    voiceToTextParser.startContinuousListening("en-IN")
+//                }
+//            }
+//        }
+//    }
+
     LaunchedEffect(state.error) {
         if(!state.isSpeaking && !isProcessing) {
             voiceToTextParser.startContinuousListening("en-IN")
@@ -97,9 +188,10 @@ fun BankingCommandsScreen(
     LaunchedEffect(state.spokenText) {
         Log.d("VoiceToText", state.spokenText)
         voiceToTextParser.stopListening()
-
-        if (isValidCommand(state.spokenText) && !otpValidationInProgress) {
+        if (isValidCommand(state.spokenText) && !otpValidationInProgress && !faceAuthInProgress) {
             command = state.spokenText
+            uiMessage = "Command detected: $command"
+            uiSubMessage = "Generating OTP..."
             otpValidationInProgress = true
             currentOTP = generateOTP()
             ttsHelper.speak("Your OTP is: $currentOTP. Please say the OTP to confirm.")
@@ -107,34 +199,35 @@ fun BankingCommandsScreen(
             voiceToTextParser.startContinuousListening("en-IN")
         } else if (otpValidationInProgress && state.spokenText.isNotEmpty()) {
             if (state.spokenText == currentOTP) {
+                uiMessage = "OTP verified ✅"
+                uiSubMessage = "Processing command: $command"
                 otpValidationInProgress = false
                 isProcessing = true
-                processSpokenText(
-                    command,
-                    authViewModel,
-                    ttsHelper,
-                    voiceToTextParser
+                faceAuthInProgress = true
+                promptManager.showBiometricPrompt(
+                    title = "Authenticate",
+                    description = "Please authenticate to continue"
                 )
-                isProcessing = false
-                if (!state.isSpeaking) {
-                    voiceToTextParser.startContinuousListening("en-IN")
-                }
             } else {
+                uiMessage = "Incorrect OTP ❌"
+                uiSubMessage = "Please try again"
                 val msg = "The OTP you provided is incorrect. Please try again."
                 ttsHelper.speak(msg)
                 Log.w("OTP", "Incorrect OTP: \"$state.spokenText\"")
-                otpValidationInProgress = false
                 delay(5000)
                 if (!state.isSpeaking) {
                     voiceToTextParser.startContinuousListening("en-IN")
                 }
             }
         } else {
-            if (state.spokenText.isNotEmpty()) {
+            if (state.spokenText.isNotEmpty() && !faceAuthInProgress) {
+                uiMessage = "Unknown command ❓"
+                uiSubMessage = "Please try again"
                 val msg = "Sorry, I didn't understand that command."
                 ttsHelper.speak(msg)
                 Log.w("COMMANDS", "Unknown command up $otpValidationInProgress: \"$state.spokenText\"")
-                delay(5000)
+                delay(4000)
+                voiceToTextParser.startContinuousListening("en-IN")
             }
         }
         if (!state.isSpeaking) {
@@ -145,9 +238,31 @@ fun BankingCommandsScreen(
     LaunchedEffect(true) {
         while (true) {
             delay(5000)
-            if (!state.isSpeaking) {
+            if (!state.isSpeaking && !isProcessing && !otpValidationInProgress) {
                 voiceToTextParser.startContinuousListening("en-IN")
             }
+        }
+    }
+
+    biometricResult?.let { result ->
+        if (result == BiometricResult.AuthenticationSuccess) {
+            faceAuthInProgress = false
+            LaunchedEffect(result) {
+                processSpokenText(
+                    command,
+                    authViewModel,
+                    ttsHelper,
+                    voiceToTextParser
+                ) { msg ->
+                    uiMessage = msg
+                }
+                isProcessing = false
+                if (!state.isSpeaking) {
+                    voiceToTextParser.startContinuousListening("en-IN")
+                }
+            }
+        } else {
+            Log.w("Biometric", "Authentication failed: $result")
         }
     }
 
@@ -187,13 +302,21 @@ fun BankingCommandsScreen(
             Box(contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(
+                            80.dp
+                        )
                         .graphicsLayer {
-                            scaleX = pulse
-                            scaleY = pulse
-                            alpha = 0.4f
+                            scaleX =
+                                pulse
+                            scaleY =
+                                pulse
+                            alpha =
+                                0.4f
                         }
-                        .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                        .background(
+                            MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
                 )
 
                 FloatingActionButton(
@@ -209,11 +332,16 @@ fun BankingCommandsScreen(
                     modifier = Modifier
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(animatedColor1, animatedColor2)
+                                colors = listOf(
+                                    animatedColor1,
+                                    animatedColor2
+                                )
                             ),
                             shape = CircleShape
                         )
-                        .size(64.dp)
+                        .size(
+                            64.dp
+                        )
                 ) {
                     AnimatedContent(targetState = state.isSpeaking) { isSpeaking ->
                         Icon(
@@ -239,7 +367,10 @@ fun BankingCommandsScreen(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(animatedColor1, animatedColor2)
+                        colors = listOf(
+                            animatedColor1,
+                            animatedColor2
+                        )
                     )
                 )
         ) {
@@ -247,7 +378,9 @@ fun BankingCommandsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(
+                        paddingValues
+                    ),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -256,9 +389,36 @@ fun BankingCommandsScreen(
                     composition = composition,
                     progress = { progress },
                     modifier = Modifier
-                        .size(250.dp)
-                        .padding(16.dp)
+                        .size(
+                            250.dp
+                        )
+                        .padding(
+                            16.dp
+                        )
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = uiMessage,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (uiSubMessage.isNotEmpty()) {
+                    Text(
+                        text = uiSubMessage,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
             }
         }
     }
@@ -268,7 +428,8 @@ suspend fun processSpokenText(
     spokenText: String,
     authViewModel: AuthViewModel,
     ttsHelper: TextToSpeechHelper,
-    voiceToTextParser: VoiceToTextParser
+    voiceToTextParser: VoiceToTextParser,
+    onUiUpdate: (String) -> Unit
 ) {
 
     val lowerText = spokenText.lowercase()
@@ -289,6 +450,7 @@ suspend fun processSpokenText(
             val balance = authViewModel.getBalance()
             val result = "Current Balance: ₹$balance"
             Log.d("COMMANDS", "Balance command recognized. Responding with: $result")
+            onUiUpdate("Balance: ₹$balance")
             ttsHelper.speak(result)
             delay(5000)
         }
@@ -314,6 +476,7 @@ suspend fun processSpokenText(
                         )
                         "Failed to send money: ${result.exceptionOrNull()?.localizedMessage}"
                     }
+                    onUiUpdate("Transaction successful ✅ Sent ₹$amount to $recipient")
                     ttsHelper.speak(message)
                 }
             } else {
@@ -379,6 +542,7 @@ fun extractRecipient(text: String): String? {
 }
 
 fun isValidCommand(spokenText: String): Boolean {
+    Log.d("VoiceToText", "isValidCommand: $spokenText")
     val lowerText = spokenText.lowercase()
 
     val sendKeywords = listOf("san", "send", "pay", "transfer", "debit")
@@ -389,7 +553,10 @@ fun isValidCommand(spokenText: String): Boolean {
     val containsCredit = creditKeywords.any { lowerText.contains(it) }
     val containsBalance = balanceKeywords.any { lowerText.contains(it) }
 
-    return containsSend || containsCredit || containsBalance
+    val isValid = containsSend || containsCredit || containsBalance
+
+    Log.d("VoiceToText", "returned $isValid")
+    return isValid
 }
 
 @SuppressLint(
