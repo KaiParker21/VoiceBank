@@ -142,4 +142,15 @@ class FirebaseAuthRepository(private val frillModel: FRILLModel, private val con
             Result.failure(e)
         }
     }
+
+    override suspend fun getTransactionHistory(uid: String): Result<List<Map<String, Any>>> {
+        return try {
+            val snapshot = firestore.collection("users").document(uid).get().await()
+            val history = snapshot.get("transactionHistory") as? List<Map<String, Any>> ?: emptyList()
+            Result.success(history)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }
