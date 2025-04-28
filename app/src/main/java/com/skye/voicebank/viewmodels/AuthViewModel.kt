@@ -18,6 +18,13 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     val signOutResult: MutableLiveData<Result<Void?>> = MutableLiveData()
     val isLoggedIn: MutableLiveData<Boolean> = MutableLiveData()
 
+    private val _transactionHistory = MutableLiveData<List<Map<String, Any>>>(emptyList())
+    val transactionHistory: MutableLiveData<List<Map<String, Any>>> = _transactionHistory
+
+    private val _errorMessage = MutableLiveData<String>()
+    val errorMessage: MutableLiveData<String> = _errorMessage
+
+
     init {
         updateCurrentUser()
     }
@@ -139,6 +146,29 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
             onResult(result)
         }
     }
+
+    fun fetchTransactionHistory() {
+        val uid = getCurrentUserId()
+        if (uid != null) {
+            viewModelScope.launch {
+                val result = authRepository.getTransactionHistory(uid)
+                val history = result.getOrNull()
+                if (history != null) {
+                    _transactionHistory.postValue(history)
+                } else {
+                    _errorMessage.postValue(result.exceptionOrNull()?.message ?: "Failed to fetch transaction history")
+                }
+            }
+        } else {
+            _errorMessage.postValue("User ID is null")
+        }
+    }
+
+
+
+
+
+
 
 
 }

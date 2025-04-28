@@ -22,34 +22,55 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -63,8 +84,10 @@ import com.skye.voicebank.utils.TextToSpeechHelper
 import com.skye.voicebank.utils.VoiceToTextParser
 import com.skye.voicebank.viewmodels.AuthViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(
     Build.VERSION_CODES.R
 )
@@ -73,6 +96,7 @@ import kotlin.random.Random
 )
 @Composable
 fun BankingCommandsScreen(
+    navController: NavController,
     voiceToTextParser: VoiceToTextParser,
     authViewModel: AuthViewModel,
     ttsHelper: TextToSpeechHelper,
@@ -297,128 +321,178 @@ fun BankingCommandsScreen(
         label = "color2"
     )
 
-    Scaffold(
-        floatingActionButton = {
-            Box(contentAlignment = Alignment.Center) {
-                Box(
-                    modifier = Modifier
-                        .size(
-                            80.dp
-                        )
-                        .graphicsLayer {
-                            scaleX =
-                                pulse
-                            scaleY =
-                                pulse
-                            alpha =
-                                0.4f
-                        }
-                        .background(
-                            MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        )
-                )
-
-                FloatingActionButton(
-                    onClick = {
-                        if (state.isSpeaking) {
-                            voiceToTextParser.stopListening()
-                        } else {
-                            voiceToTextParser.startContinuousListening("en-US")
-                        }
-                    },
-                    containerColor = Color.Transparent,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-                    modifier = Modifier
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    animatedColor1,
-                                    animatedColor2
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                        .size(
-                            64.dp
-                        )
-                ) {
-                    AnimatedContent(targetState = state.isSpeaking) { isSpeaking ->
-                        Icon(
-                            imageVector = if (isSpeaking) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                            contentDescription = "Mic Icon",
-                            tint = Color.White
-                        )
-                    }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(280.dp)
+            ) {
+                screensInDrawer.forEach { screen ->
+                    NavigationDrawerItem(
+                        label = { Text(screen.dTitle) },
+                        selected = false,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                            }
+                            navController.navigate(screen.dRoute)
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = screen.dTitle
+                            )
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
                 }
-
             }
         }
-    ) { paddingValues->
-
-        val composition by rememberLottieComposition(LottieCompositionSpec.Asset("mic.json"))
-        val progress by animateLottieCompositionAsState(
-            composition = composition,
-            iterations = LottieConstants.IterateForever
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            animatedColor1,
-                            animatedColor2
-                        )
-                    )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Command Banking") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            // Open the Drawer
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        }) {
+                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color(0xFF00f2fe)
+                    ),
+                    modifier = Modifier.shadow(elevation = 15.dp)
                 )
-        ) {
+            },
+            floatingActionButton = {
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(
+                                80.dp
+                            )
+                            .graphicsLayer {
+                                scaleX =
+                                    pulse
+                                scaleY =
+                                    pulse
+                                alpha =
+                                    0.4f
+                            }
+                            .background(
+                                MaterialTheme.colorScheme.primary,
+                                shape = CircleShape
+                            )
+                    )
 
-            Column(
+                    FloatingActionButton(
+                        onClick = {
+                            if (state.isSpeaking) {
+                                voiceToTextParser.stopListening()
+                            } else {
+                                voiceToTextParser.startContinuousListening("en-US")
+                            }
+                        },
+                        containerColor = Color.Transparent,
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
+                        modifier = Modifier
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        animatedColor1,
+                                        animatedColor2
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                            .size(
+                                64.dp
+                            )
+                    ) {
+                        AnimatedContent(targetState = state.isSpeaking) { isSpeaking ->
+                            Icon(
+                                imageVector = if (isSpeaking) Icons.Rounded.Stop else Icons.Rounded.Mic,
+                                contentDescription = "Mic Icon",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
+                }
+            }
+        ) { paddingValues ->
+
+            val composition by rememberLottieComposition(LottieCompositionSpec.Asset("mic.json"))
+            val progress by animateLottieCompositionAsState(
+                composition = composition,
+                iterations = LottieConstants.IterateForever
+            )
+
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(
-                        paddingValues
-                    ),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                animatedColor1,
+                                animatedColor2
+                            )
+                        )
+                    )
             ) {
 
-                LottieAnimation(
-                    composition = composition,
-                    progress = { progress },
+                Column(
                     modifier = Modifier
-                        .size(
-                            250.dp
-                        )
+                        .fillMaxSize()
                         .padding(
-                            16.dp
-                        )
-                )
+                            paddingValues
+                        ),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier
+                            .size(
+                                250.dp
+                            )
+                            .padding(
+                                16.dp
+                            )
+                    )
 
-                Text(
-                    text = uiMessage,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (uiSubMessage.isNotEmpty()) {
                     Text(
-                        text = uiSubMessage,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.7f),
+                        text = uiMessage,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
-                }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (uiSubMessage.isNotEmpty()) {
+                        Text(
+                            text = uiSubMessage,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+
+                }
             }
         }
     }

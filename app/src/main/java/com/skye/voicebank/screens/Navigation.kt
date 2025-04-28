@@ -27,6 +27,7 @@ fun NavigationGraph(
     NavHost(
         navController = navcontroller,
         startDestination = Screens.SplashScreen.route
+//        startDestination = Screens.DrawerScreen.BankingCommandsScreen.dRoute
     ) {
         composable (Screens.SignupOrLoginScreen.route) {
             SignUpOrLoginScreen(
@@ -43,7 +44,7 @@ fun NavigationGraph(
         }
         composable(Screens.LoginScreen.route) {
             LoginScreen(
-                onLoginSuccess = { navcontroller.navigate(Screens.BankingCommandsScreen.route) },
+                onLoginSuccess = { navcontroller.navigate(Screens.DrawerScreen.BankingCommandsScreen.dRoute) },
                 onNavigateToSignup = { navcontroller.navigate(Screens.SignUpScreen.route) },
                 authViewModel = authViewModel,
                 voiceToTextParser = voiceToTextParser,
@@ -56,7 +57,7 @@ fun NavigationGraph(
                 authViewModel = authViewModel,
                 frillModel = frillModel,
                 voiceToTextParser = voiceToTextParser,
-                onSignUpSuccess = { navcontroller.navigate(Screens.BankingCommandsScreen.route) },
+                onSignUpSuccess = { navcontroller.navigate(Screens.DrawerScreen.BankingCommandsScreen.dRoute) },
                 onNavigateToLogin = { navcontroller.navigate(Screens.LoginScreen.route) }
             )
         }
@@ -83,13 +84,28 @@ fun NavigationGraph(
 //            )
 //        }
 
-        composable(Screens.BankingCommandsScreen.route) {
+        composable(Screens.DrawerScreen.BankingCommandsScreen.dRoute) {
             BankingCommandsScreen(
+                navController = navcontroller,
                 authViewModel = authViewModel,
                 voiceToTextParser = voiceToTextParser,
                 ttsHelper = ttsHelper,
                 frillModel = frillModel,
                 promptManager = promptManager
+            )
+        }
+
+        composable(Screens.DrawerScreen.ProfileScreen.dRoute) {
+            ProfileScreen(
+                navcontroller = navcontroller,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(Screens.DrawerScreen.TransactionHistoryScreen.dRoute) {
+            TransactionHistoryScreen(
+                navController = navcontroller,
+                authViewModel = authViewModel
             )
         }
     }
