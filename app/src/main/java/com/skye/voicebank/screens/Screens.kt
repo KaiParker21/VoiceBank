@@ -23,7 +23,7 @@ sealed class Screens(val route: String) {
             "SupportAnnotationUsage"
         ) @DrawableRes val icon: ImageVector
     ) : Screens(dRoute) {
-        object BankingCommandsScreen: DrawerScreen("Commands Screen", "banking commands screen",
+        object BankingCommandsScreen: DrawerScreen("Home", "banking commands screen",
             Icons.Rounded.Home
         )
         object TransactionHistoryScreen: DrawerScreen("Transaction History", "transaction history screen",

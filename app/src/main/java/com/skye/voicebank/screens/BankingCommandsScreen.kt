@@ -354,7 +354,7 @@ fun BankingCommandsScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Command Banking") },
+                    title = { Text("Banking Assistant") },
                     navigationIcon = {
                         IconButton(onClick = {
                             // Open the Drawer
