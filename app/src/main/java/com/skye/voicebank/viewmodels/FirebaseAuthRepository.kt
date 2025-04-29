@@ -153,6 +153,16 @@ class FirebaseAuthRepository(private val frillModel: FRILLModel, private val con
         }
     }
 
+    override suspend fun getBalance(uid: String): Double {
+        try {
+            val snapshot = firestore.collection("users").document(uid).get().await()
+            val balance = snapshot.get("balance") as Double
+            return balance
+        } catch (e: Exception) {
+            return 0.0
+        }
+    }
+
 
 
 

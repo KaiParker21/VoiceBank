@@ -126,9 +126,15 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun getBalance(): Double {
-
-        return 10000.0
+    suspend fun getBalance(): Double {
+        val uid = getCurrentUserId()
+        if (uid != null) {
+            val balance = authRepository.getBalance(uid)
+            return balance
+        } else {
+            Log.e("Balance", "UID null")
+            return 0.0
+        }
     }
 
     fun creditAmount(amount: Double) {

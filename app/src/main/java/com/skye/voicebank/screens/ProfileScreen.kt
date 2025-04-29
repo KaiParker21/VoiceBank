@@ -26,6 +26,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +46,13 @@ fun ProfileScreen(
     navcontroller: NavController,
     authViewModel: AuthViewModel
 ) {
+
+    var balance by remember { mutableDoubleStateOf(0.0) }
+
+    LaunchedEffect(Unit) {
+        balance = authViewModel.getBalance()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -127,7 +140,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
                 Text(
-                    text = "Account Balance: Rs ${authViewModel.getBalance()}",
+                    text = "Account Balance: Rs $balance",
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 20.sp,
                 )

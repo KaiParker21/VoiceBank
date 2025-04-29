@@ -14,6 +14,5 @@ interface AuthRepository {
     suspend fun getUidByEmail(email: String): String?
     suspend fun sendAmount(fromUid: String, toEmail: String, amount: Double): Result<Unit>
     suspend fun getTransactionHistory(uid: String): Result<List<Map<String, Any>>>
-
-
+    suspend fun getBalance(uid: String): Double
 }
