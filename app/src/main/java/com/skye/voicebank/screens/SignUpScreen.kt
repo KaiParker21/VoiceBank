@@ -107,7 +107,7 @@ fun SignUpScreen(
                 isListeningForName =
                     false
                 textToSpeech?.speak(
-                    "You spoke $name. Is this the correct?",
+                    "You spoke $name. Is this the correct name?",
                     TextToSpeech.QUEUE_FLUSH,
                     null,
                     null
